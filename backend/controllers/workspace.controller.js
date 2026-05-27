@@ -97,11 +97,14 @@ const getUserWorkspacesController = async (req, res) => {
         }
       })
       
-   if(!workspaceUpdate) throw new ApiError(500, "can't update the workspace");
+      const updatedWorkspace = await Workspace.findById(workspaceId)
+
+      
+   if(!updatedWorkspace) throw new ApiError(500, "can't update the workspace");
    
    return res
    .status(200)
-   .json(new ApiResponse(200, "Member Added", workspaceUpdate));
+   .json(new ApiResponse(200, "Member Added", updatedWorkspace));
   } catch (error) {
     throw new ApiError(500, `Something went wrong while adding member inside workspace ${error}`);
   }

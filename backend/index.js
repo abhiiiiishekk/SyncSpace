@@ -7,6 +7,7 @@ import dbConnection from "./config/dbConnection.js";
 
 import userRouter from "./routes/user.route.js";
 import workspaceRouter from "./routes/workspace.route.js";
+import noteRouter from "./routes/note.route.js";
 
 dotenv.config({ path: "./.env" });
 
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/user", userRouter);
 app.use("/workspace", workspaceRouter);
+app.use("/note", noteRouter);
 
 dbConnection()
   .then(() => {
