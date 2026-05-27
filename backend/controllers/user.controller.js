@@ -2,7 +2,7 @@ import ApiError from "../config/ApiError.js";
 import ApiResponse from "../config/ApiResponse.js";
 import User from "../models/user.model.js";
 
-const registerUser = async (req, res, next) => {
+const registerUser = async (req, res) => {
   /*
    * extract data from req.body
    * validate whether any of the field is empty or not
@@ -39,7 +39,7 @@ const registerUser = async (req, res, next) => {
   }
 };
 
-const findMeController = async (req, res, next) => {
+const findMeController = async (req, res) => {
   try {
     return res.status(201).json(new ApiResponse(200, "User", req.user));
   } catch (error) {
@@ -47,7 +47,7 @@ const findMeController = async (req, res, next) => {
   }
 };
 
-const sentFriendRequestController = async (req, res, next) => {
+const sentFriendRequestController = async (req, res) => {
   /**
    * take username from req.body
    * find the corresponding user
@@ -114,7 +114,7 @@ const sentFriendRequestController = async (req, res, next) => {
   }
 };
 
-const acceptFriendRequestController = async (req, res, next) => {
+const acceptFriendRequestController = async (req, res) => {
   /**
    * take user id from params
    * take receivedrequest from user

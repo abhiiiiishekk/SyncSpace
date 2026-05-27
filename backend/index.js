@@ -1,9 +1,13 @@
 import dotenv from "dotenv";
 import express from "express";
-import dbConnection from "./config/dbConnection.js";
 import cookieParser from "cookie-parser";
-import userRouter from "./routes/user.route.js";
 import dns from "node:dns"; 
+
+import dbConnection from "./config/dbConnection.js";
+
+import userRouter from "./routes/user.route.js";
+import workspaceRouter from "./routes/workspace.route.js";
+
 dotenv.config({ path: "./.env" });
 
 dns.setServers(['8.8.8.8', '8.8.4.4']);
@@ -15,6 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/user", userRouter);
+app.use("/workspace", workspaceRouter);
 
 dbConnection()
   .then(() => {
