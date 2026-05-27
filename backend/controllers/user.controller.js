@@ -41,13 +41,13 @@ const registerUser = async (req, res, next) => {
 
 const findMeController = async (req, res, next) => {
   try {
-    return res.status(201).json(new ApiResponse(201, "User", req.user));
+    return res.status(201).json(new ApiResponse(200, "User", req.user));
   } catch (error) {
     throw new ApiError(500, `Something went wrong: ${error}`);
   }
 };
 
-const sendFreindRequestController = async (req, res, next) =>{
+const sentFriendRequestController = async (req, res, next) => {
   /**
    * take username from req.body
    * find the corresponding user
@@ -56,20 +56,113 @@ const sendFreindRequestController = async (req, res, next) =>{
    * if everything is successfull, then return response
    */
 
-  const {_id} = req.user;
-  const {username} = req.body;
+  try {
+    const { _id } = req.user;
+    const { username } = req.body;
 
-  if(!username) throw new ApiError(401, "Username required to sent friend request");
+    if (!username)
+      throw new ApiError(401, "Username required to sent friend request");
 
-  const findFriend = await User.findOne({username});
-  if(!findFriend) throw new ApiError(404, "Username not found");
+    const findFriend = await User.findOne({ username });
+    if (!findFriend) throw new ApiError(404, "Username not found");
 
-  const sentRequest = User.findByIdAndUpdate(_id, {
-    $push: {sentRequests: findFriend._id}
-  });
-  const receiveRequest = User.findByIdAndUpdate(findFriend._id, {
-    $push: {receivedRequests: _id}
-  });
-}
+    // checks whether the current user and the intended user is same or not
+    if (_id.toString() == findFriend._id.toString())
+      throw new ApiError(403, "Can't send friend request to yourself");
 
-export { registerUser, findMeController };
+    // checks whether the current user is already in the friend list or not
+    if (findFriend.friends.includes(_id))
+      throw new ApiError(403, "Already in friends list");
+
+    // checks whether the current user is already in the request list or not
+    if (findFriend.receivedRequests.includes(_id))
+      throw new ApiError(403, "Friend request already send");
+
+    // checks whether the opposite user already has the friend request or not, if has, then he can't sent request
+    if (findFriend.sentRequests.includes(_id))
+      throw new ApiError(
+        403,
+        "This user has already sent you a friend request",
+      );
+
+    const sentRequest = await User.findByIdAndUpdate(
+      _id,
+      {
+        $push: { sentRequests: findFriend._id },
+      },
+      { returnDocument: "after" },
+    );
+    const receiveRequest = await User.findByIdAndUpdate(
+      findFriend._id,
+      {
+        $push: { receivedRequests: _id },
+      },
+      { returnDocument: "after" },
+    );
+
+    if (!sentRequest || !receiveRequest)
+      throw new ApiError(400, "Can't send friend request");
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, "Request sent successfully", {}));
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while sending friend request: " + error,
+    );
+  }
+};
+
+const acceptFriendRequestController = async (req, res, next) => {
+  /**
+   * take user id from params
+   * take receivedrequest from user
+   * match them and check if it's exists or not
+   * if exists, then use $pull to pull out the matching id's from sender's sendRequest and receiver's receivedRequest array, and push them inside friends array
+   * if everything succeeded, return response
+   */
+  const { id } = req.params; // the user who send me request
+  if (!id) throw new ApiError(404, "ID not found");
+
+  const { _id, receivedRequests, friends } = req.user; // current logged in user
+
+  if (!(receivedRequests.includes(id)))
+    throw new ApiError(403, "ID's didn't matched");
+
+  if(friends.includes(id) ) throw new ApiError(403, "Already in the friend list")
+
+  const sender = await User.findByIdAndUpdate(
+    { _id: id },
+    {
+      $pull: {
+        sentRequests: _id,
+      },
+      $push: {
+        friends: _id,
+      },
+    },
+    { returnDocument: "after" },
+  ); // remove from sendRequest array and push it insider friends array
+
+  const receiver = await User.findByIdAndUpdate(_id,
+    {
+      $pull: {
+        receivedRequests: id,
+      },
+      $push: {
+        friends: id,
+      },
+    },
+    { returnDocument: "after" },
+  ); // remove from receivedRequests array and push it insider friends array
+
+  return res.status(201).json(new ApiResponse(201, "Request Accepted", {}))
+};
+
+export {
+  registerUser,
+  findMeController,
+  sentFriendRequestController,
+  acceptFriendRequestController,
+};
